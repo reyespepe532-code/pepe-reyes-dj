@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pepe Reyes DJ · Organizador de música</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: herramienta de cabina, directa, para DJ que trabaja de noche
+   IDEA: una caja de discos (crate) con separadores por género, como un record pool
+   PICTURE: la biblioteca misma: separadores a la izquierda, tabla de pistas, reproductor abajo
+   COLOUR and TYPE: azul noche del logo Pepe Reyes DJ, acento azul onda; Archivo
+   LAYOUT: barra superior con acciones, columna de géneros, tabla, barra de reproducción fija */
+:root{color-scheme:light dark;--bg:light-dark(#f2f5fa,#081024);--panel:light-dark(#ffffff,#0f1b36);--line:light-dark(#d6deea,#1f2e50);--ink:light-dark(#0d1528,#eef3fb);--mute:light-dark(#566278,#8fa0bf);--acc:light-dark(#0a74c7,#1e9bf0);--acc2:light-dark(#e4f1fc,#0d2a4d)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Archivo,system-ui,sans-serif;overflow-x:clip;padding-bottom:84px}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+header{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between;padding:18px max(3vw,16px);border-bottom:1px solid var(--line)}
+h1{margin:0;font-size:24px;line-height:1.05;font-weight:800;letter-spacing:-.01em}
+h1 small{display:block;font-size:14px;font-weight:500;color:var(--mute);letter-spacing:0}
+.acts{display:flex;flex-wrap:wrap;gap:8px}
+.btn{min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--panel);font-weight:600;display:inline-flex;align-items:center;gap:8px}
+.btn.pri{background:#0a6fc0;border-color:#0a6fc0;color:#fff}
+.btn:disabled{opacity:.45;cursor:default}
+.stats{display:flex;flex-wrap:wrap;gap:8px 28px;padding:14px max(3vw,16px);border-bottom:1px solid var(--line)}
+.stat b{display:block;font-size:22px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--mute)}
+.note{margin:12px max(3vw,16px) 0;padding:10px 14px;border-radius:10px;background:var(--acc2);font-size:14px}
+.drop{outline:3px dashed var(--acc);outline-offset:-10px}
+main{display:grid;grid-template-columns:240px minmax(0,1fr);gap:0;min-height:60vh}
+aside{border-right:1px solid var(--line);padding:14px 10px;max-height:calc(100vh - 100px);overflow:auto;position:sticky;top:0}
+aside label{display:block;font-size:13px;color:var(--mute);padding:0 8px 6px}
+aside select{width:100%;margin-bottom:12px}
+.tab{display:flex;justify-content:space-between;gap:8px;width:100%;text-align:left;border:0;background:none;padding:9px 10px;border-radius:8px;min-height:40px;align-items:center}
+.tab:hover{background:var(--panel)}
+.tab.on{background:var(--ink);color:var(--bg);font-weight:700}
+.tab em{font-style:normal;font-size:13px;opacity:.7;font-variant-numeric:tabular-nums}
+.tab span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.filters{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;border-bottom:1px solid var(--line);align-items:center}
+.filters input,.filters select,aside select,.ov select{min-height:44px;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:0 12px;font-size:16px}
+#q{flex:1 1 220px}
+.bpm{width:86px}
+.chk{display:inline-flex;gap:6px;align-items:center;min-height:44px;font-size:14px}
+.chk input{width:18px;height:18px;accent-color:var(--acc)}
+.mixbar{display:none;padding:8px 16px;background:var(--acc2);font-size:14px;gap:10px;align-items:center;flex-wrap:wrap}
+.mixbar.on{display:flex}
+table{width:100%;border-collapse:collapse}
+th{position:sticky;top:0;background:var(--bg);text-align:left;font-size:13px;color:var(--mute);font-weight:600;padding:10px 8px;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;user-select:none}
+th.s{color:var(--acc)}
+td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.cur td{background:var(--acc2)}
+.tt{font-weight:600}
+.sub{font-size:13px;color:var(--mute);overflow-wrap:anywhere}
+.pl{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--panel);display:grid;place-items:center;padding:0}
+.pl svg{width:14px;height:14px;fill:currentColor}
+.pill{display:inline-block;padding:2px 8px;border-radius:99px;background:var(--panel);border:1px solid var(--line);font-size:13px;white-space:nowrap}
+.key{font-weight:700}
+.det{color:var(--acc)}
+.dup{color:var(--acc);font-size:12px;font-weight:700}
+.more{margin:16px;display:flex;justify-content:center}
+.empty{padding:40px 16px;text-align:center;color:var(--mute)}
+.player{position:fixed;left:0;right:0;bottom:0;display:flex;gap:14px;align-items:center;padding:12px max(3vw,16px);background:var(--panel);border-top:1px solid var(--line);z-index:5}
+.player .pl{width:48px;height:48px;background:#0a6fc0;border-color:#0a6fc0;color:#fff;flex:none}
+.np{flex:0 1 260px;overflow:hidden}
+.np .tt,.np .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seek{flex:1;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums}
+.seek input{flex:1;accent-color:var(--acc)}
+.ov{position:fixed;inset:0;background:rgba(5,6,8,.6);display:none;place-items:center;padding:16px;z-index:9}
+.ov.on{display:grid}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;width:min(760px,100%);max-height:92vh;overflow:auto}
+.card h2{margin:0 0 4px;font-size:24px;line-height:1.1}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0}
+.grid label{font-size:13px;color:var(--mute);display:grid;gap:4px}
+textarea{width:100%;height:220px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;padding:10px;resize:vertical}
+.row{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:12px}
+.glist{max-height:340px;overflow:auto;margin:4px 0 14px;display:grid;gap:10px}
+.grp{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.grp h3{margin:0 0 6px;font-size:15px}
+.opt{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:6px 0;border-top:1px solid var(--line);cursor:pointer}
+.opt input{width:18px;height:18px;accent-color:var(--acc)}
+.opt .k{font-size:12px;font-weight:700;color:var(--acc)}
+.opt.rm .tt{text-decoration:line-through;opacity:.6}
+.warn{color:var(--acc);font-weight:600}
+.prog{font-size:14px;color:var(--acc);font-weight:600}
+@media(max-width:820px){main{grid-template-columns:minmax(0,1fr)}aside{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line);display:flex;gap:6px;overflow-x:auto;padding:10px}aside label,aside select{display:none}.tab{flex:none;width:auto}.c-fold,.c-fmt{display:none}.np{flex-basis:140px}}
+@media(max-width:600px){table{font-size:13px}.c-yr,.c-gen{display:none}.seek span{display:none}h1{font-size:26px}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.brand{display:flex;align-items:center;gap:12px}.logo{height:84px;width:auto;flex:none;border-radius:12px;box-shadow:0 0 24px rgba(30,155,240,.25)}
+.mob-only{display:none}body.mob .mob-only{display:inline-flex}body.mob .desk-only{display:none}
+@media(max-width:600px){header{padding:14px 16px}.acts{width:100%}.acts .btn{flex:1 1 auto;justify-content:center;padding:0 12px}.brand{width:100%;flex-wrap:wrap;gap:6px}.logo{height:auto;width:100%;max-width:440px}h1{font-size:20px}h1 small{display:inline;margin-left:6px;font-size:20px;font-weight:800;color:inherit}.player{flex-wrap:wrap;gap:8px 12px;padding:10px 16px}.np{flex:1 1 0}.seek{order:3;flex-basis:100%}#bMix{padding:0 12px}body{padding-bottom:132px}.filters{padding:12px}.stats{gap:6px 18px}.stat b{font-size:19px}.bpm{flex:1 1 70px}.filters select{flex:1 1 140px}.card{padding:16px}.opt{grid-template-columns:24px minmax(0,1fr)}.opt .k{grid-column:2}}
+@media(prefers-reduced-motion:no-preference){.tab,.btn{transition:background .15s}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><svg class="logo" viewBox="0 0 560 120" role="img" aria-label="Pepe Reyes DJ" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="lgW" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="116"><stop offset="0" stop-color="#5fe3ff" stop-opacity=".25"/><stop offset=".5" stop-color="#7fe9ff"/><stop offset="1" stop-color="#5fe3ff" stop-opacity=".25"/></linearGradient>
+<linearGradient id="lgT" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#e3e8f0"/><stop offset="1" stop-color="#9aa6b8"/></linearGradient>
+<radialGradient id="lgG" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#2aa8ff" stop-opacity=".55"/><stop offset="1" stop-color="#2aa8ff" stop-opacity="0"/></radialGradient>
+<filter id="lgB" x="-10%" y="-30%" width="120%" height="160%"><feGaussianBlur stdDeviation="2.2"/></filter></defs>
+<rect width="560" height="120" rx="14" fill="#0d1a3a"/><ellipse cx="280.0" cy="60" rx="250" ry="58" fill="url(#lgG)"/>
+<g stroke="url(#lgW)" stroke-width="1.3" filter="url(#lgB)"><line x1="40.0" y1="50.0" x2="40.0" y2="70.0"/><line x1="49.6" y1="52.9" x2="49.6" y2="67.1"/><line x1="59.2" y1="53.5" x2="59.2" y2="66.5"/><line x1="68.8" y1="49.4" x2="68.8" y2="70.6"/><line x1="78.4" y1="47.9" x2="78.4" y2="72.1"/><line x1="88.0" y1="48.1" x2="88.0" y2="71.9"/><line x1="97.6" y1="38.8" x2="97.6" y2="81.2"/><line x1="107.2" y1="47.5" x2="107.2" y2="72.5"/><line x1="116.8" y1="45.1" x2="116.8" y2="74.9"/><line x1="126.4" y1="31.5" x2="126.4" y2="88.5"/><line x1="136.0" y1="36.2" x2="136.0" y2="83.8"/><line x1="145.6" y1="47.6" x2="145.6" y2="72.4"/><line x1="155.2" y1="32.3" x2="155.2" y2="87.7"/><line x1="164.8" y1="31.0" x2="164.8" y2="89.0"/><line x1="174.4" y1="22.1" x2="174.4" y2="97.9"/><line x1="184.0" y1="27.1" x2="184.0" y2="92.9"/><line x1="193.6" y1="23.2" x2="193.6" y2="96.8"/><line x1="203.2" y1="41.8" x2="203.2" y2="78.2"/><line x1="212.8" y1="41.4" x2="212.8" y2="78.6"/><line x1="222.4" y1="26.5" x2="222.4" y2="93.5"/><line x1="232.0" y1="17.5" x2="232.0" y2="102.5"/><line x1="241.6" y1="23.0" x2="241.6" y2="97.0"/><line x1="251.2" y1="12.7" x2="251.2" y2="107.3"/><line x1="260.8" y1="19.0" x2="260.8" y2="101.0"/><line x1="270.4" y1="21.5" x2="270.4" y2="98.5"/><line x1="280.0" y1="34.8" x2="280.0" y2="85.2"/><line x1="289.6" y1="43.3" x2="289.6" y2="76.7"/><line x1="299.2" y1="40.1" x2="299.2" y2="79.9"/><line x1="308.8" y1="38.6" x2="308.8" y2="81.4"/><line x1="318.4" y1="12.9" x2="318.4" y2="107.1"/><line x1="328.0" y1="23.8" x2="328.0" y2="96.2"/><line x1="337.6" y1="16.1" x2="337.6" y2="103.9"/><line x1="347.2" y1="34.4" x2="347.2" y2="85.6"/><line x1="356.8" y1="41.9" x2="356.8" y2="78.1"/><line x1="366.4" y1="40.3" x2="366.4" y2="79.7"/><line x1="376.0" y1="38.9" x2="376.0" y2="81.1"/><line x1="385.6" y1="35.0" x2="385.6" y2="85.0"/><line x1="395.2" y1="25.8" x2="395.2" y2="94.2"/><line x1="404.8" y1="27.9" x2="404.8" y2="92.1"/><line x1="414.4" y1="29.0" x2="414.4" y2="91.0"/><line x1="424.0" y1="41.0" x2="424.0" y2="79.0"/><line x1="433.6" y1="38.4" x2="433.6" y2="81.6"/><line x1="443.2" y1="46.5" x2="443.2" y2="73.5"/><line x1="452.8" y1="48.8" x2="452.8" y2="71.2"/><line x1="462.4" y1="47.5" x2="462.4" y2="72.5"/><line x1="472.0" y1="33.5" x2="472.0" y2="86.5"/><line x1="481.6" y1="47.2" x2="481.6" y2="72.8"/><line x1="491.2" y1="51.6" x2="491.2" y2="68.4"/><line x1="500.8" y1="50.3" x2="500.8" y2="69.7"/><line x1="510.4" y1="54.7" x2="510.4" y2="65.3"/></g>
+<g stroke="url(#lgW)" stroke-width="1.1"><line x1="40.0" y1="50.0" x2="40.0" y2="70.0"/><line x1="43.2" y1="51.9" x2="43.2" y2="68.1"/><line x1="46.4" y1="46.0" x2="46.4" y2="74.0"/><line x1="49.6" y1="52.9" x2="49.6" y2="67.1"/><line x1="52.8" y1="47.7" x2="52.8" y2="72.3"/><line x1="56.0" y1="49.9" x2="56.0" y2="70.1"/><line x1="59.2" y1="53.5" x2="59.2" y2="66.5"/><line x1="62.4" y1="48.7" x2="62.4" y2="71.3"/><line x1="65.6" y1="53.8" x2="65.6" y2="66.2"/><line x1="68.8" y1="49.4" x2="68.8" y2="70.6"/><line x1="72.0" y1="53.1" x2="72.0" y2="66.9"/><line x1="75.2" y1="52.6" x2="75.2" y2="67.4"/><line x1="78.4" y1="47.9" x2="78.4" y2="72.1"/><line x1="81.6" y1="41.6" x2="81.6" y2="78.4"/><line x1="84.8" y1="50.4" x2="84.8" y2="69.6"/><line x1="88.0" y1="48.1" x2="88.0" y2="71.9"/><line x1="91.2" y1="40.4" x2="91.2" y2="79.6"/><line x1="94.4" y1="33.4" x2="94.4" y2="86.6"/><line x1="97.6" y1="38.8" x2="97.6" y2="81.2"/><line x1="100.8" y1="41.4" x2="100.8" y2="78.6"/><line x1="104.0" y1="28.6" x2="104.0" y2="91.4"/><line x1="107.2" y1="47.5" x2="107.2" y2="72.5"/><line x1="110.4" y1="29.7" x2="110.4" y2="90.3"/><line x1="113.6" y1="41.9" x2="113.6" y2="78.1"/><line x1="116.8" y1="45.1" x2="116.8" y2="74.9"/><line x1="120.0" y1="45.8" x2="120.0" y2="74.2"/><line x1="123.2" y1="41.9" x2="123.2" y2="78.1"/><line x1="126.4" y1="31.5" x2="126.4" y2="88.5"/><line x1="129.6" y1="45.1" x2="129.6" y2="74.9"/><line x1="132.8" y1="37.1" x2="132.8" y2="82.9"/><line x1="136.0" y1="36.2" x2="136.0" y2="83.8"/><line x1="139.2" y1="41.6" x2="139.2" y2="78.4"/><line x1="142.4" y1="37.9" x2="142.4" y2="82.1"/><line x1="145.6" y1="47.6" x2="145.6" y2="72.4"/><line x1="148.8" y1="47.4" x2="148.8" y2="72.6"/><line x1="152.0" y1="43.7" x2="152.0" y2="76.3"/><line x1="155.2" y1="32.3" x2="155.2" y2="87.7"/><line x1="158.4" y1="37.1" x2="158.4" y2="82.9"/><line x1="161.6" y1="38.9" x2="161.6" y2="81.1"/><line x1="164.8" y1="31.0" x2="164.8" y2="89.0"/><line x1="168.0" y1="33.4" x2="168.0" y2="86.6"/><line x1="171.2" y1="36.8" x2="171.2" y2="83.2"/><line x1="174.4" y1="22.1" x2="174.4" y2="97.9"/><line x1="177.6" y1="24.1" x2="177.6" y2="95.9"/><line x1="180.8" y1="37.0" x2="180.8" y2="83.0"/><line x1="184.0" y1="27.1" x2="184.0" y2="92.9"/><line x1="187.2" y1="28.5" x2="187.2" y2="91.5"/><line x1="190.4" y1="18.5" x2="190.4" y2="101.5"/><line x1="193.6" y1="23.2" x2="193.6" y2="96.8"/><line x1="196.8" y1="36.3" x2="196.8" y2="83.7"/><line x1="200.0" y1="17.2" x2="200.0" y2="102.8"/><line x1="203.2" y1="41.8" x2="203.2" y2="78.2"/><line x1="206.4" y1="33.9" x2="206.4" y2="86.1"/><line x1="209.6" y1="24.9" x2="209.6" y2="95.1"/><line x1="212.8" y1="41.4" x2="212.8" y2="78.6"/><line x1="216.0" y1="32.2" x2="216.0" y2="87.8"/><line x1="219.2" y1="44.2" x2="219.2" y2="75.8"/><line x1="222.4" y1="26.5" x2="222.4" y2="93.5"/><line x1="225.6" y1="23.0" x2="225.6" y2="97.0"/><line x1="228.8" y1="27.6" x2="228.8" y2="92.4"/><line x1="232.0" y1="17.5" x2="232.0" y2="102.5"/><line x1="235.2" y1="33.6" x2="235.2" y2="86.4"/><line x1="238.4" y1="20.7" x2="238.4" y2="99.3"/><line x1="241.6" y1="23.0" x2="241.6" y2="97.0"/><line x1="244.8" y1="22.7" x2="244.8" y2="97.3"/><line x1="248.0" y1="26.2" x2="248.0" y2="93.8"/><line x1="251.2" y1="12.7" x2="251.2" y2="107.3"/><line x1="254.4" y1="8.9" x2="254.4" y2="111.1"/><line x1="257.6" y1="25.2" x2="257.6" y2="94.8"/><line x1="260.8" y1="19.0" x2="260.8" y2="101.0"/><line x1="264.0" y1="39.8" x2="264.0" y2="80.2"/><line x1="267.2" y1="19.0" x2="267.2" y2="101.0"/><line x1="270.4" y1="21.5" x2="270.4" y2="98.5"/><line x1="273.6" y1="11.3" x2="273.6" y2="108.7"/><line x1="276.8" y1="17.6" x2="276.8" y2="102.4"/><line x1="280.0" y1="34.8" x2="280.0" y2="85.2"/><line x1="283.2" y1="32.1" x2="283.2" y2="87.9"/><line x1="286.4" y1="24.0" x2="286.4" y2="96.0"/><line x1="289.6" y1="43.3" x2="289.6" y2="76.7"/><line x1="292.8" y1="30.2" x2="292.8" y2="89.8"/><line x1="296.0" y1="38.8" x2="296.0" y2="81.2"/><line x1="299.2" y1="40.1" x2="299.2" y2="79.9"/><line x1="302.4" y1="41.5" x2="302.4" y2="78.5"/><line x1="305.6" y1="18.9" x2="305.6" y2="101.1"/><line x1="308.8" y1="38.6" x2="308.8" y2="81.4"/><line x1="312.0" y1="34.4" x2="312.0" y2="85.6"/><line x1="315.2" y1="29.2" x2="315.2" y2="90.8"/><line x1="318.4" y1="12.9" x2="318.4" y2="107.1"/><line x1="321.6" y1="39.2" x2="321.6" y2="80.8"/><line x1="324.8" y1="26.9" x2="324.8" y2="93.1"/><line x1="328.0" y1="23.8" x2="328.0" y2="96.2"/><line x1="331.2" y1="13.4" x2="331.2" y2="106.6"/><line x1="334.4" y1="16.4" x2="334.4" y2="103.6"/><line x1="337.6" y1="16.1" x2="337.6" y2="103.9"/><line x1="340.8" y1="35.1" x2="340.8" y2="84.9"/><line x1="344.0" y1="31.9" x2="344.0" y2="88.1"/><line x1="347.2" y1="34.4" x2="347.2" y2="85.6"/><line x1="350.4" y1="20.7" x2="350.4" y2="99.3"/><line x1="353.6" y1="19.8" x2="353.6" y2="100.2"/><line x1="356.8" y1="41.9" x2="356.8" y2="78.1"/><line x1="360.0" y1="41.5" x2="360.0" y2="78.5"/><line x1="363.2" y1="40.3" x2="363.2" y2="79.7"/><line x1="366.4" y1="40.3" x2="366.4" y2="79.7"/><line x1="369.6" y1="33.7" x2="369.6" y2="86.3"/><line x1="372.8" y1="30.7" x2="372.8" y2="89.3"/><line x1="376.0" y1="38.9" x2="376.0" y2="81.1"/><line x1="379.2" y1="45.5" x2="379.2" y2="74.5"/><line x1="382.4" y1="34.0" x2="382.4" y2="86.0"/><line x1="385.6" y1="35.0" x2="385.6" y2="85.0"/><line x1="388.8" y1="29.3" x2="388.8" y2="90.7"/><line x1="392.0" y1="18.3" x2="392.0" y2="101.7"/><line x1="395.2" y1="25.8" x2="395.2" y2="94.2"/><line x1="398.4" y1="30.9" x2="398.4" y2="89.1"/><line x1="401.6" y1="28.7" x2="401.6" y2="91.3"/><line x1="404.8" y1="27.9" x2="404.8" y2="92.1"/><line x1="408.0" y1="44.9" x2="408.0" y2="75.1"/><line x1="411.2" y1="24.7" x2="411.2" y2="95.3"/><line x1="414.4" y1="29.0" x2="414.4" y2="91.0"/><line x1="417.6" y1="28.3" x2="417.6" y2="91.7"/><line x1="420.8" y1="31.5" x2="420.8" y2="88.5"/><line x1="424.0" y1="41.0" x2="424.0" y2="79.0"/><line x1="427.2" y1="41.7" x2="427.2" y2="78.3"/><line x1="430.4" y1="47.9" x2="430.4" y2="72.1"/><line x1="433.6" y1="38.4" x2="433.6" y2="81.6"/><line x1="436.8" y1="49.1" x2="436.8" y2="70.9"/><line x1="440.0" y1="49.1" x2="440.0" y2="70.9"/><line x1="443.2" y1="46.5" x2="443.2" y2="73.5"/><line x1="446.4" y1="47.1" x2="446.4" y2="72.9"/><line x1="449.6" y1="43.6" x2="449.6" y2="76.4"/><line x1="452.8" y1="48.8" x2="452.8" y2="71.2"/><line x1="456.0" y1="49.6" x2="456.0" y2="70.4"/><line x1="459.2" y1="46.6" x2="459.2" y2="73.4"/><line x1="462.4" y1="47.5" x2="462.4" y2="72.5"/><line x1="465.6" y1="42.4" x2="465.6" y2="77.6"/><line x1="468.8" y1="49.2" x2="468.8" y2="70.8"/><line x1="472.0" y1="33.5" x2="472.0" y2="86.5"/><line x1="475.2" y1="39.2" x2="475.2" y2="80.8"/><line x1="478.4" y1="48.2" x2="478.4" y2="71.8"/><line x1="481.6" y1="47.2" x2="481.6" y2="72.8"/><line x1="484.8" y1="46.7" x2="484.8" y2="73.3"/><line x1="488.0" y1="47.5" x2="488.0" y2="72.5"/><line x1="491.2" y1="51.6" x2="491.2" y2="68.4"/><line x1="494.4" y1="44.0" x2="494.4" y2="76.0"/><line x1="497.6" y1="43.8" x2="497.6" y2="76.2"/><line x1="500.8" y1="50.3" x2="500.8" y2="69.7"/><line x1="504.0" y1="50.8" x2="504.0" y2="69.2"/><line x1="507.2" y1="54.7" x2="507.2" y2="65.3"/><line x1="510.4" y1="54.7" x2="510.4" y2="65.3"/><line x1="513.6" y1="52.9" x2="513.6" y2="67.1"/><line x1="516.8" y1="53.5" x2="516.8" y2="66.5"/></g>
+<line x1="70" y1="32" x2="490" y2="32" stroke="#bff4ff" stroke-width="1.2" opacity=".8"/>
+<text x="280.0" y="82" text-anchor="middle" font-family="Archivo,system-ui,sans-serif" font-weight="800" font-stretch="condensed" font-size="64" letter-spacing="1" fill="#06122a" opacity=".7" transform="translate(3 4)">Pepe Reyes DJ</text>
+<text x="280.0" y="82" text-anchor="middle" font-family="Archivo,system-ui,sans-serif" font-weight="800" font-stretch="condensed" font-size="64" letter-spacing="1" fill="url(#lgT)">Pepe Reyes DJ</text></svg><h1><span class="sr">Pepe Reyes DJ · </span>Organizador de música</h1></div>
+  <div class="acts">
+    <button class="btn pri" id="bOpen">Abrir carpeta de música</button>
+    <input id="pick" type="file" webkitdirectory multiple hidden>
+    <input id="pickF" type="file" multiple accept="audio/*,video/*,.mp3,.m4a,.aac,.wav,.flac,.aif,.aiff,.ogg,.wma" hidden>
+    <button class="btn mob-only" id="bAdd">Agregar más canciones</button>
+    <button class="btn" id="bBpm" disabled>Detectar BPM faltantes</button>
+    <button class="btn" id="bCsv" disabled>Copiar lista CSV</button>
+    <button class="btn" id="bDup">Duplicados</button>
+    <button class="btn desk-only" id="bOrg">Organizar carpetas</button>
+  </div>
+</header>
+<div class="stats" id="stats"></div>
+<div class="note" id="note">Estás viendo una biblioteca de ejemplo. Abre tu carpeta o disco con el botón azul (en Chrome o Edge) y la app lee las etiquetas de cada archivo: título, artista, género, BPM y key. Con permiso de edición también puede quitar las canciones duplicadas aquí mismo. Nada sale de tu computadora.<span class="mob-only"> En el celular: toca el botón azul y selecciona tus canciones (puedes elegir varias a la vez y luego agregar más).</span></div>
+<main>
+  <aside>
+    <label for="grp">Separadores por</label>
+    <select id="grp"><option value="folder">Carpeta</option><option value="tag">Etiqueta de género</option></select>
+    <div id="tabs"></div>
+  </aside>
+  <section>
+    <div class="filters">
+      <input id="q" type="search" placeholder="Buscar título, artista o carpeta" aria-label="Buscar">
+      <input id="bmin" class="bpm" type="number" placeholder="BPM mín" aria-label="BPM mínimo">
+      <input id="bmax" class="bpm" type="number" placeholder="BPM máx" aria-label="BPM máximo">
+      <select id="key" aria-label="Key"></select>
+      <select id="fmt" aria-label="Formato"></select>
+      <label class="chk"><input type="checkbox" id="dup">Solo duplicados</label>
+      <select id="dm" aria-label="Cómo detectar duplicados"><option value="name">Duplicado = mismo artista y título</option><option value="exact">Duplicado = mismo artista, título y tamaño</option><option value="loose">Duplicado = ignorando versiones (Clean, Intro, Remix…)</option></select>
+      <span class="prog" id="prog"></span>
+    </div>
+    <div class="mixbar" id="mixbar"></div>
+    <table class="stack">
+      <thead><tr><th style="width:48px"></th><th data-s="title">Título</th><th data-s="genre" class="c-gen">Género</th><th data-s="bpm" class="n">BPM</th><th data-s="key">Key</th><th data-s="year" class="n c-yr">Año</th><th data-s="ext" class="c-fmt">Formato</th><th data-s="path" class="c-fold">Carpeta</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="more" id="more"></div>
+  </section>
+</main>
+
+<div class="player">
+  <button class="pl" id="pp" aria-label="Reproducir"></button>
+  <div class="np"><div class="tt" id="npT">Nada sonando</div><div class="sub" id="npA">Toca una pista para escucharla</div></div>
+  <div class="seek"><span id="tc">0:00</span><input type="range" id="sk" min="0" max="1000" value="0" aria-label="Posición"><span id="td">0:00</span></div>
+  <button class="btn" id="bMix" disabled>Mezclar con esta</button>
+  <audio id="au"></audio>
+</div>
+
+<div class="ov" id="ov" role="dialog" aria-modal="true" aria-labelledby="orgT">
+  <div class="card">
+    <h2 id="orgT">Organizar en carpetas</h2>
+    <div class="sub">La app arma un script que copia o mueve tus archivos a una carpeta nueva <b>_Organizado</b> dentro de la que abriste. Usa las pistas del filtro actual.</div>
+    <div class="grid">
+      <label>Estructura<select id="oS"><option value="ga">Género / Artista</option><option value="gb">Género / Rango de BPM</option><option value="gk">Género / Key</option><option value="gy">Género / Año</option><option value="a">Artista</option></select></label>
+      <label>Acción<select id="oA"><option value="copy">Copiar (seguro)</option><option value="move">Mover</option></select></label>
+      <label>Sistema<select id="oO"><option value="win">Windows (PowerShell)</option><option value="mac">Mac / Linux (Terminal)</option></select></label>
+      <label>Nombres<select id="oR"><option value="0">Dejar como están</option><option value="1">Artista - Título</option></select></label>
+    </div>
+    <textarea id="oT" readonly aria-label="Script"></textarea>
+    <div class="sub" id="oH"></div>
+    <div class="row"><button class="btn" id="oX">Cerrar</button><button class="btn pri" id="oC">Copiar script</button></div>
+  </div>
+</div>
+
+<div class="ov" id="ovD" role="dialog" aria-modal="true" aria-labelledby="dupT">
+  <div class="card" style="width:min(900px,100%)">
+    <h2 id="dupT">Quitar duplicados</h2>
+    <div class="sub" id="dS"></div>
+    <div class="grid">
+      <label id="dAL">Qué hacer con las copias<select id="dA"><option value="move">Mover a la carpeta _Duplicados (recomendado)</option><option value="del">Borrar definitivamente</option></select></label>
+      <label class="desk-only">Sistema<select id="dO"><option value="win">Windows (PowerShell)</option><option value="mac">Mac / Linux (Terminal)</option></select></label>
+      <label>Conservar por defecto<select id="dK"><option value="big">El archivo más pesado (mejor calidad)</option><option value="mp3">Preferir MP3, luego el más pesado</option><option value="short">El que esté menos metido en subcarpetas</option></select></label>
+    </div>
+    <div id="dL" class="glist"></div>
+    <textarea id="dT" readonly aria-label="Script de duplicados"></textarea>
+    <div class="sub" id="dH"></div>
+    <div class="row"><button class="btn" id="dX">Cerrar</button><button class="btn" id="dC">Copiar script</button><button class="btn pri" id="dRun" disabled>Quitar ahora</button></div>
+  </div>
+</div>
+
+<script>
+{
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const AUD=/\.(mp3|m4a|aac|wav|flac|aiff?|ogg|mp4|m4v|mov|wma)$/i;
+const IPLAY='<svg viewBox="0 0 16 16"><path d="M4 2l10 6-10 6z"/></svg>',IPAUSE='<svg viewBox="0 0 16 16"><path d="M3 2h4v12H3zM9 2h4v12H9z"/></svg>';
+const CAM={B:'1B','F#':'2B',GB:'2B',DB:'3B','C#':'3B',AB:'4B','G#':'4B',EB:'5B','D#':'5B',BB:'6B','A#':'6B',F:'7B',C:'8B',G:'9B',D:'10B',A:'11B',E:'12B','G#M':'1A',ABM:'1A','D#M':'2A',EBM:'2A',BBM:'3A','A#M':'3A',FM:'4A',CM:'5A',GM:'6A',DM:'7A',AM:'8A',EM:'9A',BM:'10A','F#M':'11A',GBM:'11A','C#M':'12A',DBM:'12A'};
+function cam(k){if(!k)return'';k=String(k).trim();let m=k.match(/^0?(1[0-2]|[1-9])\s*([ab])$/i);if(m)return m[1]+m[2].toUpperCase();
+  m=k.replace(/♯/g,'#').replace(/♭/g,'b').match(/^([a-g])([#b]?)\s*(m|min|minor|menor)?/i);if(!m)return'';
+  const s=(m[1].toUpperCase()+(m[2]=='#'?'#':m[2]?'B':'')+(m[3]?'M':''));return CAM[s]||''}
+const num=v=>{const n=parseFloat(String(v||'').replace(',','.'));return n>40&&n<250?Math.round(n*10)/10:0};
+const cleanG=g=>{g=String(g||'').replace(/^\(\d+\)/,'').trim();return /^\d*$/.test(g)?'':g};
+const SAMPLE=[['Monaco','Bad Bunny','Reggaetón',137,'9A',2023],['Tu Falta De Querer (Intro)','Mon Laferte','Cumbia',96,'5A',2024],['Si Te Pegas','Los Ángeles Azules','Cumbia',98,'8A',2022],['La Bebé (Remix)','Yng Lvcas, Peso Pluma','Reggaetón',90,'6A',2023],['Ella Baila Sola','Eslabón Armado','Corridos',148,'10B',2023],['Obsesión','Aventura','Bachata',126,'8A',2002],['Tusa','Karol G','Reggaetón',101,'',2019],['Dembow Mix 128','Varios','Dembow',128,'2A',2024],['La Cumbia Triste','Grupo Firme','Banda',0,'',2022],['Mi Credo (Extended)','K-Paz de la Sierra','Norteño',112,'7B',2021],['Guaracha Aleteo 01','DJ Taiz','Guaracha',130,'4A',2024],['Obsesión (Clean)','Aventura','Bachata',126,'8A',2002],['Obsesión','Aventura','Bachata',126,'8A',2002],['Tusa','Karol G','Reggaetón',101,'',2019]];
+let lib=[],dups=new Set(),cur=null,seq=0,isSample=true,rootH=null,busy=false;
+const V={genre:'*',q:'',bmin:'',bmax:'',key:'',fmt:'',dup:false,sort:'genre',dir:1,limit:400,mix:null,grp:'folder'};
+const G=t=>V.grp=='folder'?(t.folder||t.tg||'Raíz'):(t.tg||t.folder||'Sin género');
+V.dm='name';
+const dk=t=>{let s=t.title;if(V.dm=='loose')s=s.replace(/[\(\[][^\)\]]*[\)\]]/g,'');return norm(t.artist+'|'+s).replace(/[^a-z0-9|]/g,'')+(V.dm=='exact'?'|'+t.size:'')};
+const rel=(t,sep)=>(t.path?t.path.split('/').join(sep)+sep:'')+t.name;
+const quoter=win=>win?s=>"'"+s.replace(/'/g,"''")+"'":s=>"'"+s.replace(/'/g,"'\\''")+"'";
+
+/* --- lectura de etiquetas ID3 --- */
+const MAP={TIT2:'title',TT2:'title',TPE1:'artist',TP1:'artist',TCON:'genre',TCO:'genre',TBPM:'bpm',TBP:'bpm',TKEY:'key',TKE:'key',TYER:'year',TYE:'year',TDRC:'year',TALB:'album',TAL:'album'};
+const ss=(b,i)=>(b[i]&127)<<21|(b[i+1]&127)<<14|(b[i+2]&127)<<7|(b[i+3]&127);
+const u32=(b,i)=>((b[i]<<24)|(b[i+1]<<16)|(b[i+2]<<8)|b[i+3])>>>0;
+function txt(b){const e=b[0];let d=b.subarray(1),enc='latin1';
+  if(e==1)enc=d[0]==0xFE&&d[1]==0xFF?'utf-16be':'utf-16le';else if(e==2)enc='utf-16be';else if(e==3)enc='utf-8';
+  return new TextDecoder(enc).decode(d).replace(/^\uFEFF/,'').replace(/\u0000+$/,'').replace(/\u0000\uFEFF?/g,' / ').trim()}
+async function readTags(f){const t={};try{
+  const h=new Uint8Array(await f.slice(0,10).arrayBuffer());
+  if(h[0]==73&&h[1]==68&&h[2]==51){const v=h[3],size=ss(h,6),b=new Uint8Array(await f.slice(10,10+Math.min(size,3e6)).arrayBuffer());
+    let p=0;if(h[5]&64&&v>2)p=v==4?ss(b,0):u32(b,0)+4;
+    const il=v==2?3:4,hl=v==2?6:10;
+    while(p+hl<b.length){const id=String.fromCharCode(...b.subarray(p,p+il));if(!/^[A-Z0-9]+$/.test(id))break;
+      const fs=v==2?(b[p+3]<<16|b[p+4]<<8|b[p+5]):v==4?ss(b,p+4):u32(b,p+4);
+      if(fs<=0||p+hl+fs>b.length)break;const k=MAP[id];if(k&&!t[k])t[k]=txt(b.subarray(p+hl,p+hl+fs));p+=hl+fs}}
+  if(!t.title&&f.size>128&&/mp3$/i.test(f.name)){const b=new Uint8Array(await f.slice(f.size-128).arrayBuffer());
+    if(b[0]==84&&b[1]==65&&b[2]==71){const s=(a,z)=>new TextDecoder('latin1').decode(b.subarray(a,z)).replace(/\u0000.*$/,'').trim();t.title=s(3,33);t.artist=s(33,63);t.year=s(93,97)}}
+}catch(e){}return t}
+function mk(f,path,t){
+  const base=f.name.replace(/\.\w+$/,''),ext=(f.name.match(/\.(\w+)$/)||[,''])[1].toLowerCase();
+  const parts=path.split('/');parts.pop();const folders=parts.slice(1);
+  let artist=t.artist,title=t.title;const m=base.match(/^(.+?)\s+[-–]\s+(.+)$/);
+  if(!title){if(m){artist=artist||m[1];title=m[2]}else title=base}
+  const bpm=num(t.bpm)||num((base.match(/\b(\d{2,3}(?:\.\d)?)\s?bpm\b/i)||[])[1]);
+  const key=cam(t.key)||cam((base.match(/\b(0?[1-9]|1[0-2])[ab]\b/i)||[])[0]);
+  return{id:seq++,file:f,name:f.name,path:folders.join('/'),folder:folders[0]||'',tg:cleanG(t.genre),title:String(title).trim()||base,artist:String(artist||'Desconocido').trim(),bpm,key,year:String(t.year||'').slice(0,4),ext,size:f.size,det:false}}
+async function load(items,add){
+  items=items.filter(([f])=>AUD.test(f.name));if(!items.length){$('#prog').textContent='No encontré archivos de audio o video.';return}
+  const old=add&&!isSample;if(old){const have=new Set(lib.map(t=>t.name+'|'+t.size+'|'+t.file.lastModified));items=items.filter(([f])=>!have.has(f.name+'|'+f.size+'|'+f.lastModified));
+    if(!items.length){$('#prog').textContent='Esas canciones ya estaban en la lista.';return}}else{lib=[];seq=0}
+  isSample=false;$('#note').style.display='none';let done=0;const out=new Array(items.length);
+  const work=async()=>{while(done<items.length){const i=done++;const[f,p,h,dir]=items[i];out[i]=Object.assign(mk(f,p,await readTags(f)),{h,dir});
+    if(i%50==0)$('#prog').textContent=`Leyendo ${i} de ${items.length}…`}};
+  await Promise.all(Array.from({length:8},work));lib=(old?lib:[]).concat(out.filter(Boolean));$('#prog').textContent=old?`Agregadas ${out.length} canciones.`:'';
+  if(lib.every(t=>!t.folder)){V.grp='tag';$('#grp').value='tag'}
+  V.genre='*';V.mix=null;finish()}
+function calcDups(){const c={};lib.forEach(t=>{t.dk=dk(t);c[t.dk]=(c[t.dk]||0)+1});dups=new Set(Object.keys(c).filter(k=>c[k]>1))}
+function finish(){calcDups();
+  const ex=[...new Set(lib.map(t=>t.ext))].sort();$('#fmt').innerHTML='<option value="">Todos los formatos</option>'+ex.map(e=>`<option>${esc(e)}</option>`).join('');
+  $('#bBpm').disabled=$('#bCsv').disabled=isSample;render()}
+
+/* --- filtros y vista --- */
+function compat(a,b){if(a===b)return false;let ok=true;
+  if(a.bpm&&b.bpm){const r=[b.bpm,b.bpm*2,b.bpm/2].some(x=>Math.abs(x-a.bpm)/a.bpm<=.06);ok=r}
+  if(ok&&a.key&&b.key){const na=+a.key.slice(0,-1),nb=+b.key.slice(0,-1),la=a.key.slice(-1),lb=b.key.slice(-1);
+    ok=(na==nb)||(la==lb&&((na%12)+1==nb||(nb%12)+1==na))}return ok}
+function list(){const q=norm(V.q);
+  const r=lib.filter(t=>(V.genre=='*'||G(t)==V.genre)&&(!q||norm(t.title+' '+t.artist+' '+t.path).includes(q))&&(!V.bmin||t.bpm>=+V.bmin)&&(!V.bmax||(t.bpm&&t.bpm<=+V.bmax))&&(!V.key||t.key==V.key)&&(!V.fmt||t.ext==V.fmt)&&(!V.dup||dups.has(t.dk))&&(!V.mix||compat(V.mix,t)));
+  const k=V.sort,d=V.dir;r.sort((a,b)=>{let x=k=='genre'?G(a):a[k],y=k=='genre'?G(b):b[k];
+    if(typeof x=='number'||k=='bpm'){x=x||(d>0?1e9:0);y=y||(d>0?1e9:0);return(x-y)*d}
+    return String(x).localeCompare(String(y),'es',{numeric:true})*d||a.title.localeCompare(b.title,'es')});return r}
+const fmtSize=b=>b>1e9?(b/1e9).toFixed(1)+' GB':b>=1e6?(b/1e6).toFixed(b<1e7?1:0)+' MB':Math.max(1,Math.round(b/1e3))+' KB';
+function render(){
+  const cnt={};lib.forEach(t=>{const g=G(t);cnt[g]=(cnt[g]||0)+1});
+  $('#tabs').innerHTML=[['*','Toda la música',lib.length],...Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(([g,n])=>[g,g,n])]
+    .map(([v,l,n])=>`<button class="tab${V.genre==v?' on':''}" data-g="${esc(v)}"><span>${esc(l)}</span><em>${n.toLocaleString('es-MX')}</em></button>`).join('');
+  const size=lib.reduce((s,t)=>s+t.size,0),noB=lib.filter(t=>!t.bpm).length,dupN=lib.filter(t=>dups.has(t.dk)).length;
+  $('#stats').innerHTML=[[lib.length.toLocaleString('es-MX'),'pistas'],[Object.keys(cnt).length,'separadores'],[isSample?'—':fmtSize(size),'en disco'],[dupN,'posibles duplicados'],[noB,'sin BPM']]
+    .map(([b,s])=>`<div class="stat"><b>${b}</b><span>${s}</span></div>`).join('');
+  const r=list(),show=r.slice(0,V.limit);
+  document.querySelectorAll('th[data-s]').forEach(th=>{th.classList.toggle('s',th.dataset.s==V.sort);th.textContent=th.textContent.replace(/ [↑↓]$/,'')+(th.dataset.s==V.sort?(V.dir>0?' ↑':' ↓'):'')});
+  $('#rows').innerHTML=show.length?show.map(t=>`<tr data-id="${t.id}"${cur===t?' class="cur"':''}>
+    <td><button class="pl" data-p="${t.id}" aria-label="Reproducir ${esc(t.title)}"${t.file?'':' disabled'}>${cur===t&&!$('#au').paused?IPAUSE:IPLAY}</button></td>
+    <td><div class="tt">${esc(t.title)} ${dups.has(t.dk)?'<span class="dup">DUP</span>':''}</div><div class="sub">${esc(t.artist)}</div></td>
+    <td class="c-gen"><span class="pill">${esc(G(t))}</span></td>
+    <td class="n${t.det?' det':''}">${t.bpm?(t.det?'≈':'')+t.bpm:'—'}</td>
+    <td class="key">${esc(t.key)||'—'}</td><td class="n c-yr">${esc(t.year)||'—'}</td>
+    <td class="c-fmt">${esc(t.ext.toUpperCase())}</td><td class="c-fold sub">${esc(t.path)||'—'}</td></tr>`).join('')
+    :`<tr><td colspan="8" class="empty">Ninguna pista coincide con estos filtros.</td></tr>`;
+  $('#more').innerHTML=r.length>V.limit?`<button class="btn" id="mo">Mostrar más (${(r.length-V.limit).toLocaleString('es-MX')} restantes)</button>`:'';
+  const mb=$('#mixbar');mb.classList.toggle('on',!!V.mix);
+  if(V.mix)mb.innerHTML=`<span>Compatibles con <b>${esc(V.mix.title)}</b> (${V.mix.bpm||'?'} BPM, ${esc(V.mix.key)||'sin key'}): ±6% de BPM y keys vecinas en la rueda Camelot.</span><button class="btn" id="mixX">Quitar</button>`}
+
+/* --- reproductor --- */
+const au=$('#au');let url='';
+const tm=s=>isFinite(s)?Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0'):'0:00';
+function play(t){if(cur===t){au.paused?au.play().catch(()=>{}):au.pause();return}
+  if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(t.file);cur=t;au.src=url;au.play().catch(()=>{});
+  $('#npT').textContent=t.title;$('#npA').textContent=t.artist+(t.bpm?' · '+t.bpm+' BPM':'')+(t.key?' · '+t.key:'');$('#bMix').disabled=false}
+au.addEventListener('play',()=>{$('#pp').innerHTML=IPAUSE;render()});au.addEventListener('pause',()=>{$('#pp').innerHTML=IPLAY;render()});
+au.addEventListener('timeupdate',()=>{$('#tc').textContent=tm(au.currentTime);$('#td').textContent=tm(au.duration);if(au.duration)$('#sk').value=au.currentTime/au.duration*1000});
+$('#sk').addEventListener('input',e=>{if(au.duration)au.currentTime=e.target.value/1000*au.duration});
+$('#pp').innerHTML=IPLAY;$('#pp').addEventListener('click',()=>{if(cur)play(cur)});
+$('#bMix').addEventListener('click',()=>{if(cur){V.mix=cur;V.genre='*';V.limit=400;render()}});
+
+/* --- detección de BPM (aproximada) --- */
+async function detect(f){const buf=await f.slice(0,Math.min(f.size,5e6)).arrayBuffer();
+  const a=await new OfflineAudioContext(1,1,44100).decodeAudioData(buf);const sr=a.sampleRate,st=a.duration>45?15:0,dur=Math.min(30,a.duration-st);if(dur<8)return 0;
+  const oc=new OfflineAudioContext(1,Math.floor(sr*dur),sr),src=oc.createBufferSource(),lp=oc.createBiquadFilter();
+  lp.type='lowpass';lp.frequency.value=150;src.buffer=a;src.connect(lp).connect(oc.destination);src.start(0,st);
+  const d=(await oc.startRendering()).getChannelData(0),hop=128,fps=sr/hop,env=[];let prev=0;
+  for(let i=0;i+hop<d.length;i+=hop){let e=0;for(let j=i;j<i+hop;j++)e+=d[j]*d[j];e=Math.sqrt(e/hop);env.push(Math.max(0,e-prev));prev=e}
+  let best=0,bl=0;for(let lag=Math.floor(fps*60/180);lag<=Math.ceil(fps*60/75);lag++){let s=0;for(let i=lag;i<env.length;i++)s+=env[i]*env[i-lag];if(s>best){best=s;bl=lag}}
+  return bl?Math.round(60*fps/bl):0}
+$('#bBpm').addEventListener('click',async e=>{const b=e.currentTarget;b.disabled=true;const todo=list().filter(t=>!t.bpm&&t.file&&/mp3|m4a|wav|aac|ogg/.test(t.ext));
+  for(let i=0;i<todo.length;i++){$('#prog').textContent=`Analizando BPM ${i+1} de ${todo.length}…`;try{const v=await detect(todo[i].file);if(v){todo[i].bpm=v;todo[i].det=true}}catch(x){}
+    if(i%5==4)render()}
+  $('#prog').textContent=todo.length?`BPM estimado en ${todo.filter(t=>t.det).length} pistas (marcadas con ≈).`:'Todas las pistas visibles ya tienen BPM.';b.disabled=false;render()});
+
+/* --- organizar: generar script --- */
+const san=s=>String(s||'').replace(/[<>:"/\\|?*\u0000-\u001f]/g,'').replace(/[. ]+$/,'').trim().slice(0,80)||'Sin nombre';
+function script(){const sc=$('#oS').value,mv=$('#oA').value=='move',win=$('#oO').value=='win',rn=$('#oR').value=='1',sep=win?'\\':'/';
+  const q=win?s=>"'"+s.replace(/'/g,"''")+"'":s=>"'"+s.replace(/'/g,"'\\''")+"'";
+  const used=new Set(),dirs=new Set(),ops=[];
+  for(const t of list()){const rng=t.bpm?Math.floor(t.bpm/10)*10+'-'+(Math.floor(t.bpm/10)*10+9)+' BPM':'Sin BPM';
+    const seg={ga:[G(t),t.artist],gb:[G(t),rng],gk:[G(t),t.key||'Sin key'],gy:[G(t),t.year||'Sin año'],a:[t.artist]}[sc].map(san);
+    const dir=['_Organizado',...seg].join(sep);let nm=rn?san(t.artist+' - '+t.title)+'.'+t.ext:t.name,p=dir+sep+nm,i=2;
+    while(used.has(p.toLowerCase())){p=dir+sep+nm.replace(/(\.\w+)$/,` (${i++})$1`)}used.add(p.toLowerCase());dirs.add(dir);
+    ops.push([(t.path?t.path.split('/').join(sep)+sep:'')+t.name,p])}
+  const L=win?['# Pepe Reyes DJ: ejecuta esto en PowerShell DENTRO de la carpeta que abriste','# (clic derecho en la carpeta > Abrir en Terminal, pega y presiona Enter)',
+      ...[...dirs].map(d=>`New-Item -ItemType Directory -Force -Path ${q(d)} | Out-Null`),...ops.map(([s,d])=>`${mv?'Move-Item':'Copy-Item'} -LiteralPath ${q(s)} -Destination ${q(d)}`),`Write-Host "Listo: ${ops.length} archivos"`]
+    :['#!/bin/bash','# Pepe Reyes DJ: abre Terminal, escribe cd + espacio, arrastra la carpeta que abriste, Enter; luego pega esto',
+      ...[...dirs].map(d=>`mkdir -p ${q(d)}`),...ops.map(([s,d])=>`${mv?'mv -n':'cp -n'} ${q(s)} ${q(d)}`),`echo "Listo: ${ops.length} archivos"`];
+  $('#oT').value=L.join('\n');$('#oH').textContent=`${ops.length.toLocaleString('es-MX')} archivos en ${dirs.size} carpetas nuevas.${mv?' Mover cambia tu carpeta original: haz respaldo antes.':''}${isSample?' (Es la biblioteca de ejemplo: abre tu carpeta para un script real.)':''}`}
+['#oS','#oA','#oO','#oR'].forEach(s=>$(s).addEventListener('change',script));
+$('#bOrg').addEventListener('click',()=>{script();$('#ov').classList.add('on');$('#oC').focus()});
+$('#oX').addEventListener('click',()=>$('#ov').classList.remove('on'));
+$('#ov').addEventListener('click',e=>{if(e.target.id=='ov')$('#ov').classList.remove('on')});
+document.addEventListener('keydown',e=>{if(e.key=='Escape')$('#ov').classList.remove('on')});
+const copy=async(txt,btn,ok)=>{try{await navigator.clipboard.writeText(txt);btn.textContent=ok}catch(e){btn.textContent='Selecciona y copia (Ctrl+C)'}};
+$('#oC').addEventListener('click',e=>{$('#oT').select();copy($('#oT').value,e.currentTarget,'Script copiado')});
+$('#bCsv').addEventListener('click',e=>{const c=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  copy(['Titulo,Artista,Genero,BPM,Key,Año,Formato,Carpeta,Archivo',...list().map(t=>[t.title,t.artist,G(t),t.bpm||'',t.key,t.year,t.ext,t.path,t.name].map(c).join(','))].join('\n'),e.currentTarget,'CSV copiado: pégalo en Excel')});
+
+/* --- eventos --- */
+$('#pick').addEventListener('change',e=>{rootH=null;load([...e.target.files].map(f=>[f,f.webkitRelativePath||f.name]))});
+async function walk(en,p,out){if(en.isFile){out.push([await new Promise((r,j)=>en.file(r,j)),p+en.name]);return}
+  const rd=en.createReader();let b;do{b=await new Promise((r,j)=>rd.readEntries(r,j));for(const x of b)await walk(x,p+en.name+'/',out)}while(b.length)}
+document.addEventListener('dragover',e=>{e.preventDefault();document.body.classList.add('drop')});
+document.addEventListener('dragleave',e=>{if(!e.relatedTarget)document.body.classList.remove('drop')});
+document.addEventListener('drop',async e=>{e.preventDefault();document.body.classList.remove('drop');rootH=null;const out=[];$('#prog').textContent='Buscando archivos…';
+  for(const it of [...e.dataTransfer.items].map(i=>i.webkitGetAsEntry&&i.webkitGetAsEntry()).filter(Boolean))await walk(it,'',out);load(out)});
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b){V.genre=b.dataset.g;V.limit=400;render()}});
+$('#rows').addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(b){const t=lib.find(x=>x.id==b.dataset.p);if(t&&t.file)play(t)}});
+$('#more').addEventListener('click',e=>{if(e.target.id=='mo'){V.limit+=400;render()}});
+$('#mixbar').addEventListener('click',e=>{if(e.target.id=='mixX'){V.mix=null;render()}});
+document.querySelector('thead').addEventListener('click',e=>{const th=e.target.closest('th[data-s]');if(!th)return;const s=th.dataset.s;V.dir=V.sort==s?-V.dir:1;V.sort=s;render()});
+let tq;$('#q').addEventListener('input',e=>{clearTimeout(tq);tq=setTimeout(()=>{V.q=e.target.value;V.limit=400;render()},150)});
+['bmin','bmax','key','fmt'].forEach(k=>$('#'+k).addEventListener('input',e=>{V[k]=e.target.value;V.limit=400;render()}));
+$('#dup').addEventListener('change',e=>{V.dup=e.target.checked;render()});
+$('#dm').addEventListener('change',e=>{V.dm=e.target.value;keep={};calcDups();render()});
+
+/* --- duplicados --- */
+let keep={},GS=[];
+function pickKeep(g){const m=$('#dK').value;return[...g].sort((a,b)=>(m=='mp3'?(b.ext=='mp3')-(a.ext=='mp3'):0)||(m=='short'?a.path.split('/').length-b.path.split('/').length:0)||b.size-a.size||a.path.length-b.path.length)[0].id}
+function dupOpen(reset){const m={};lib.forEach(t=>{if(dups.has(t.dk))(m[t.dk]=m[t.dk]||[]).push(t)});
+  GS=Object.values(m).sort((a,b)=>a[0].artist.localeCompare(b[0].artist,'es'));
+  GS.forEach(g=>{const k=g[0].dk;if(reset||!g.some(t=>t.id==keep[k]))keep[k]=pickKeep(g)});
+  $('#dL').innerHTML=GS.length?GS.slice(0,300).map((g,i)=>`<div class="grp"><h3>${esc(g[0].artist)} — ${esc(g[0].title)}</h3>${g.map(t=>{const k=keep[t.dk]==t.id;
+    return`<label class="opt${k?'':' rm'}"><input type="radio" name="g${i}" data-gi="${i}" value="${t.id}"${k?' checked':''}><div><div class="tt">${esc(t.name)}</div><div class="sub">${esc(t.path)||'Raíz'} · ${esc(t.ext.toUpperCase())} · ${fmtSize(t.size)}</div></div><span class="k">${k?'CONSERVAR':'QUITAR'}</span></label>`}).join('')}</div>`).join('')
+    +(GS.length>300?`<div class="sub">Se muestran 300 de ${GS.length} grupos; el script incluye todos.</div>`:'')
+    :'<div class="empty">No encontré duplicados con este criterio.</div>';
+  dupScript()}
+const rmList=()=>GS.flatMap(g=>g.filter(t=>t.id!=keep[t.dk]));
+function dupScript(){const win=$('#dO').value=='win',mv=$('#dA').value=='move',sep=win?'\\':'/',q=quoter(win);
+  const rm=rmList(),bytes=rm.reduce((s,t)=>s+t.size,0),dirs=new Set(),LM=TOUCH&&!rootH,b=$('#dRun');
+  $('#dAL').style.display=LM?'none':'';b.style.display=LM?'none':'';$('#dC').textContent=LM?'Copiar lista':'Copiar script';
+  if(LM){const fd=t=>t.file?new Date(t.file.lastModified).toLocaleDateString('es-MX'):'';
+    $('#dT').value=rm.map(t=>`${(t.path?t.path+'/':'')+t.name}  ·  ${fmtSize(t.size)}${fd(t)?'  ·  '+fd(t):''}`).join('\n');
+    $('#dS').textContent=`${GS.length.toLocaleString('es-MX')} canciones repetidas. Elige en cada grupo cuál se queda.`;
+    $('#dH').innerHTML=`${rm.length.toLocaleString('es-MX')} archivos para quitar · ${isSample?'—':fmtSize(bytes)} que liberarías. En el celular el navegador no puede borrar archivos: copia esta lista y bórralos desde la app <b>Archivos</b> (Files de Google en Android, Archivos en iPhone). El tamaño te ayuda a reconocer cuál es cuál.`;return}
+  const ops=rm.map(t=>{const s=rel(t,sep);if(!mv)return win?`Remove-Item -LiteralPath ${q(s)}`:`rm -f ${q(s)}`;
+    const d=['_Duplicados',...(t.path?t.path.split('/'):[])].join(sep);dirs.add(d);return win?`Move-Item -LiteralPath ${q(s)} -Destination ${q(d+sep+t.name)}`:`mv -n ${q(s)} ${q(d+sep+t.name)}`});
+  const mk=[...dirs].map(d=>win?`New-Item -ItemType Directory -Force -Path ${q(d)} | Out-Null`:`mkdir -p ${q(d)}`);
+  const head=win?['# Pepe Reyes DJ: ejecuta en PowerShell DENTRO de la carpeta que abriste en la app']:['#!/bin/bash','# Pepe Reyes DJ: ejecuta en Terminal DENTRO de la carpeta que abriste en la app'];
+  $('#dT').value=[...head,...mk,...ops,win?`Write-Host "Listo: ${rm.length} archivos"`:`echo "Listo: ${rm.length} archivos"`].join('\n');
+  $('#dS').textContent=`${GS.length.toLocaleString('es-MX')} canciones repetidas. Elige en cada grupo cuál se queda; las demás se quitan.`;
+  $('#dH').innerHTML=`${rm.length.toLocaleString('es-MX')} archivos a quitar · ${isSample?'—':fmtSize(bytes)} liberados. `+(mv?'Quedan en <b>_Duplicados</b> con sus carpetas originales: revísalos y luego borra esa carpeta tú mismo.':'<span class="warn">Borrar definitivamente no pasa por la papelera y no se puede deshacer. Haz respaldo antes.</span>')+(isSample?' (Biblioteca de ejemplo: abre tu carpeta para un script real.)':'')
+    +(rootH?' Puedes quitarlos aquí mismo con el botón azul, o copiar el script.':isSample?'':' Para quitarlos desde aquí, abre la carpeta con el botón «Abrir carpeta de música» en Chrome o Edge (no arrastrándola).');
+  b.disabled=!rootH||!rm.length||busy;if(!busy)b.textContent=rm.length?`${mv?'Mover':'Borrar'} ${rm.length.toLocaleString('es-MX')} ahora`:'Quitar ahora'}
+$('#bDup').addEventListener('click',()=>{dupOpen(false);$('#ovD').classList.add('on');$('#dC').focus()});
+$('#dL').addEventListener('change',e=>{const r=e.target;if(r.dataset.gi==null)return;const g=GS[+r.dataset.gi];keep[g[0].dk]=+r.value;dupOpen(false)});
+$('#dK').addEventListener('change',()=>dupOpen(true));
+['#dA','#dO'].forEach(s=>$(s).addEventListener('change',dupScript));
+$('#dX').addEventListener('click',()=>$('#ovD').classList.remove('on'));
+$('#ovD').addEventListener('click',e=>{if(e.target.id=='ovD')$('#ovD').classList.remove('on')});
+$('#dC').addEventListener('click',e=>{$('#dT').select();copy($('#dT').value,e.currentTarget,'Script copiado')});
+document.addEventListener('keydown',e=>{if(e.key=='Escape')$('#ovD').classList.remove('on')});
+$('#grp').addEventListener('change',e=>{V.grp=e.target.value;V.genre='*';render()});
+$('#key').innerHTML='<option value="">Todas las keys</option>'+Array.from({length:12},(_,i)=>`<option>${i+1}A</option><option>${i+1}B</option>`).join('');
+
+/* --- abrir con permiso de edición y quitar duplicados dentro de la app --- */
+async function walkH(dir,p,out){for await(const[n,h]of dir.entries()){
+  if(h.kind=='file'){if(AUD.test(n))try{out.push([await h.getFile(),p+n,h,dir])}catch(e){}}
+  else if(n!='_Duplicados'&&n!='_Organizado'&&!n.startsWith('.')&&!/^\$RECYCLE\.BIN$|^System Volume Information$/i.test(n)){
+    if(out.length%200==0)$('#prog').textContent=`Buscando archivos… ${out.length.toLocaleString('es-MX')}`;await walkH(h,p+n+'/',out)}}}
+const TOUCH=matchMedia('(pointer:coarse)').matches;document.body.classList.toggle('mob',TOUCH);
+$('#pickF').addEventListener('change',e=>{const add=e.target.dataset.add=='1';rootH=null;load([...e.target.files].map(f=>[f,f.name]),add);e.target.value=''});
+$('#bAdd').addEventListener('click',()=>{$('#pickF').dataset.add='1';$('#pickF').click()});
+$('#bOpen').addEventListener('click',async()=>{if(!window.showDirectoryPicker){$('#pickF').dataset.add='';$(TOUCH?'#pickF':'#pick').click();return}
+  try{const d=await showDirectoryPicker({mode:'readwrite',id:'crate'});$('#prog').textContent='Buscando archivos…';const out=[];await walkH(d,d.name+'/',out);rootH=d;load(out)}
+  catch(e){if(e.name!='AbortError')$('#prog').textContent='No pude abrir esa carpeta ('+e.message+'). Si es la raíz del disco, elige la carpeta de música.'}});
+$('#dRun').addEventListener('click',async e=>{const b=e.currentTarget,mv=$('#dA').value=='move',rm=rmList().filter(t=>t.h&&t.dir);if(!rootH||!rm.length)return;
+  if(!confirm(mv?`Se van a mover ${rm.length} archivos duplicados a la carpeta _Duplicados dentro de «${rootH.name}». Después podrás revisarlos y borrar esa carpeta tú mismo.\n\n¿Continuar?`
+    :`Se van a BORRAR DEFINITIVAMENTE ${rm.length} archivos duplicados. No pasan por la papelera y no se puede deshacer.\n\n¿Continuar?`))return;
+  if(await rootH.requestPermission({mode:'readwrite'})!='granted'){$('#dH').textContent='Sin permiso de edición no puedo quitar archivos.';return}
+  busy=true;b.disabled=true;au.pause();const gone=new Set(),fail=[];
+  for(let i=0;i<rm.length;i++){const t=rm[i];b.textContent=`Quitando ${i+1} de ${rm.length}…`;
+    try{if(mv){let d=rootH;for(const seg of['_Duplicados',...(t.path?t.path.split('/'):[])])d=await d.getDirectoryHandle(seg,{create:true});
+        let nm=t.name;for(let k=2;;k++){try{await d.getFileHandle(nm);nm=t.name.replace(/(\.\w+)?$/,` (${k})$1`)}catch(x){break}}
+        const w=await(await d.getFileHandle(nm,{create:true})).createWritable();await(await t.h.getFile()).stream().pipeTo(w)}
+      await t.dir.removeEntry(t.name);gone.add(t.id)}catch(x){fail.push(t.name+': '+x.message)}}
+  if(cur&&gone.has(cur.id)){au.removeAttribute('src');cur=null;$('#npT').textContent='Nada sonando';$('#npA').textContent='';$('#bMix').disabled=true}
+  lib=lib.filter(t=>!gone.has(t.id));if(V.mix&&gone.has(V.mix.id))V.mix=null;keep={};calcDups();busy=false;render();dupOpen(true);
+  $('#dH').innerHTML=`<b>Listo: ${gone.size.toLocaleString('es-MX')} archivos ${mv?'movidos a _Duplicados':'borrados'}.</b>`+(fail.length?` <span class="warn">${fail.length} no se pudieron quitar (¿abiertos en otro programa?):</span> ${esc(fail.slice(0,5).join(' · '))}${fail.length>5?'…':''}`:'')});
+
+lib=SAMPLE.map(([title,artist,g,bpm,key,year],i)=>({id:seq++,file:null,name:`${artist} - ${title}.mp3`,path:g+(i>11?'/Semana 52':'/Semana 47'),folder:g,tg:g,title,artist,bpm,key,year:String(year),ext:i%5==3?'mp4':'mp3',size:i>11?6e6:9e6,det:false}));
+finish();
+}
+</script>
+</body>
+</html>

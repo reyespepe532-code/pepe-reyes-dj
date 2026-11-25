@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Pepe Reyes DJ · Organizador de música</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0d1a3a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pepe Reyes DJ">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
 <style>
@@ -392,15 +399,18 @@ $('#grp').addEventListener('change',e=>{V.grp=e.target.value;V.genre='*';render(
 $('#key').innerHTML='<option value="">Todas las keys</option>'+Array.from({length:12},(_,i)=>`<option>${i+1}A</option><option>${i+1}B</option>`).join('');
 
 /* --- abrir con permiso de edición y quitar duplicados dentro de la app --- */
-async function walkH(dir,p,out){for await(const[n,h]of dir.entries()){
-  if(h.kind=='file'){if(AUD.test(n))try{out.push([await h.getFile(),p+n,h,dir])}catch(e){}}
-  else if(n!='_Duplicados'&&n!='_Organizado'&&!n.startsWith('.')&&!/^\$RECYCLE\.BIN$|^System Volume Information$/i.test(n)){
-    if(out.length%200==0)$('#prog').textContent=`Buscando archivos… ${out.length.toLocaleString('es-MX')}`;await walkH(h,p+n+'/',out)}}}
+let scanD=0,scanT=0;
+async function walkH(dir,p,out){scanD++;
+  if(Date.now()-scanT>250){scanT=Date.now();$('#prog').textContent=`Buscando… ${scanD.toLocaleString('es-MX')} carpetas revisadas, ${out.length.toLocaleString('es-MX')} canciones encontradas`}
+  try{for await(const[n,h]of dir.entries()){
+    if(h.kind=='file'){if(AUD.test(n))try{out.push([await h.getFile(),p+n,h,dir])}catch(e){}}
+    else if(n!='_Duplicados'&&n!='_Organizado'&&!n.startsWith('.')&&!n.startsWith('$')&&!/^(System Volume Information|Windows|Program Files( \(x86\))?|ProgramData|AppData|node_modules)$/i.test(n))
+      await walkH(h,p+n+'/',out)}}catch(e){}}
 const TOUCH=matchMedia('(pointer:coarse)').matches;document.body.classList.toggle('mob',TOUCH);
 $('#pickF').addEventListener('change',e=>{const add=e.target.dataset.add=='1';rootH=null;load([...e.target.files].map(f=>[f,f.name]),add);e.target.value=''});
 $('#bAdd').addEventListener('click',()=>{$('#pickF').dataset.add='1';$('#pickF').click()});
 $('#bOpen').addEventListener('click',async()=>{if(!window.showDirectoryPicker){$('#pickF').dataset.add='';$(TOUCH?'#pickF':'#pick').click();return}
-  try{const d=await showDirectoryPicker({mode:'readwrite',id:'crate'});$('#prog').textContent='Buscando archivos…';const out=[];await walkH(d,d.name+'/',out);rootH=d;load(out)}
+  try{const d=await showDirectoryPicker({mode:'readwrite',id:'crate'});scanD=0;scanT=0;$('#prog').textContent='Buscando archivos…';const out=[];await walkH(d,d.name+'/',out);rootH=d;load(out)}
   catch(e){if(e.name!='AbortError')$('#prog').textContent='No pude abrir esa carpeta ('+e.message+'). Si es la raíz del disco, elige la carpeta de música.'}});
 $('#dRun').addEventListener('click',async e=>{const b=e.currentTarget,mv=$('#dA').value=='move',rm=rmList().filter(t=>t.h&&t.dir);if(!rootH||!rm.length)return;
   if(!confirm(mv?`Se van a mover ${rm.length} archivos duplicados a la carpeta _Duplicados dentro de «${rootH.name}». Después podrás revisarlos y borrar esa carpeta tú mismo.\n\n¿Continuar?`
